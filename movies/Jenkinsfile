@@ -5,16 +5,16 @@ pipeline {
     }
     agent {
       node {
-        //TODO: Add label for the Maven jenkins agent
+        label 'maven'
       }
     }
 
     environment {
         //TODO: Customize these variables for your environment
-        DEV_PROJECT = "youruser-movies-dev"
-        STAGE_PROJECT = "youruser-movies-stage"
-        APP_GIT_URL = "https://github.com/youruser/DO288-apps"
-        NEXUS_SERVER = "http://nexus-common.apps.cluster.domain.example.com/repository/java"
+        DEV_PROJECT = "federico-paparoni-eng-it-movies-dev"
+        STAGE_PROJECT = "federico-paparoni-eng-it-movies-stage"
+        APP_GIT_URL = "https://github.com/fpaparoni/DO288-apps"
+        NEXUS_SERVER = "http://nexus-common.apps.eu45.prod.nextcle.com/repository/java"
 
         // DO NOT CHANGE THE GLOBAL VARS BELOW THIS LINE
         APP_NAME = "movies"
@@ -82,13 +82,18 @@ pipeline {
                     }
                 }
                 // TODO: Create a new OpenShift application based on the ${APP_NAME}:latest image stream
-                // TODO: Expose the ${APP_NAME} service for external access
+		sh '''
+oc project ${DEV_PROJECT}
+oc new-app --as-deployment-config --name movies ${APP_NAME}:latest \
+--context-dir ${APP_NAME}
+oc expose svc/${APP_NAME}
+'''
             }
         }
 
         stage('Wait for deployment in DEV env') {
-            //TODO: Watch deployment until pod is in 'Running' state
-        }
+        	input message: "Continue?"
+	}
 
         stage('Promote to Staging Env') {
             steps {
@@ -97,8 +102,12 @@ pipeline {
                 }
                 script {
                     openshift.withCluster() {
-                    // TODO: Tag the ${APP_NAME}:latest image stream in the dev env as ${APP_NAME}:stage in staging
-                    }
+                    script {
+openshift.withCluster() {
+openshift.tag("${DEV_PROJECT}/movies:latest", "${STAGE_PROJECT}/movies:stage")
+}
+}
+			}
                 }
             }
         }
@@ -113,6 +122,11 @@ pipeline {
                    '''
 
                 echo '### Creating a new app in Staging ###'
+		sh '''
+oc project ${STAGE_PROJECT}
+oc new-app --as-deployment-config --name movies -i movies:stage
+oc expose svc/${APP_NAME}
+'''
                 // TODO: Create a new app in staging and expose the service
             }
         }
