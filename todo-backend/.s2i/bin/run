@@ -1,5 +1,3 @@
 #!/bin/bash
-
-echo "Custom RUN S2I script"
-
-/usr/libexec/s2i/run
+echo "Before running applicationzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+exec /usr/libexec/s2i/run
